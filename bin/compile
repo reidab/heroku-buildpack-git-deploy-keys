@@ -38,7 +38,10 @@ arrow "############################################"
 arrow "ssh dir is #{SSH_DIR}"
 ################# Get the key from heroku's environment config #################
 ssh_key = read_env('GIT_DEPLOY_KEY')
+key_file_path = File.join(ENV_DIR, 'GIT_DEPLOY_KEY') if ssh_key
+
 ssh_key ||= read_env('GITHUB_DEPLOY_KEY')
+key_file_path ||= File.join(ENV_DIR, 'GITHUB_DEPLOY_KEY')
 
 if ssh_key.nil?
   alert "GIT_DEPLOY_KEY not set"
