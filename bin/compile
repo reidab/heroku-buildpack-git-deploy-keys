@@ -21,29 +21,55 @@ def arrow(str)
   end
 end
 
+def read_env(env_file)
+  env_file_path = File.join(env_dir, env_file)
+  File.exist?(env_file_path) && File.read(env_file_path) || nil
+end
+
 arrow "############################################"
 arrow "         GIT DEPLOY KEY BUILDPACK           "
 arrow "############################################"
 
 arrow "ssh dir is #{ssh_dir}"
 ################# Get the key from heroku's environment config #################
-key_file_path = File.join env_dir, 'GITHUB_DEPLOY_KEY'
-ssh_key = File.open(key_file_path, &:read) if File.exist? key_file_path
+ssh_key = read_env('GIT_DEPLOY_KEY')
+ssh_key ||= read_env('GITHUB_DEPLOY_KEY')
 
 if ssh_key.nil?
-  alert "GITHUB_DEDLOY_KEY not set"
-  alert "  Try `heroku config:add GITHUB_DEPLOY_KEY=<your private token>`"
+  alert "GIT_DEPLOY_KEY not set"
+  alert "  Try `heroku config:add GIT_DEPLOY_KEY=<your private token>`"
   exit 1
+elsif key_file_path.include?("GITHUB")
+  alert "GITHUB_DEPLOY_KEY will be deprecated; please switch to GIT_DEPLOY_KEY"
 end
 
 ############# Get the known host from heroku's environment config ##############
-host_hash_path = File.join env_dir, 'GITHUB_HOST_HASH'
-host_hash = File.open(host_hash_path, &:read) if File.exist? host_hash_path
+host_hash_path = read_env('GIT_HOST_HASH')
+host_hash_path = read_env('GITHUB_HOST_HASH')
 
 if host_hash.nil?
   alert "GITHUB_HOST_HASH not set"
   alert "  Try `heroku config:add GITHUB_HOST_HASH=<hash>`"
   exit 1
+elsif key_file_path.include?("GITHUB")
+  alert "GITHUB_HOST_HASH will be deprecated; please switch to GIT_HOST_HASH"
+end
+
+
+############# Get the git host from heroku's environment config ################
+git_host = read_env('GIT_HOST')
+
+if git_host.nil?
+  arrow 'GIT_HOST not set, assuming github.com'
+  git_user = 'github.com'
+end
+
+############# Get the git user from heroku's environment config ################
+git_host = read_env('GIT_USER')
+
+if git_host.nil?
+  arrow "GIT_USER not set, assuming 'git'"
+  git_user = 'git'
 end
 
 ###################### Process and clean up the ssh keys #######################
@@ -68,10 +94,10 @@ Dir.mktmpdir 'ssh_buidpack' do |dir|
   # clean_host_hash = `cat "#{dir}/host_hash.pub"`
 
   if temp_key.strip == ''
-    alert "GITHUB_DEPLOY_KEY was invalid"
+    alert "GIT_DEPLOY_KEY was invalid"
     exit 1
   else
-    arrow "Using GITHUB_DEPLOY_KEY #{fingerprint}"
+    arrow "Using GIT_DEPLOY_KEY #{fingerprint}"
   end
 
 end
@@ -95,8 +121,8 @@ arrow "Wrote host hash to user's known hosts"
 
 File.open "#{ssh_dir}/config", 'w' do |f|
   f.puts "IdentityFile #{ssh_dir}/id_rsa"
-  f.puts "host github.com"
-  f.puts "     user git"
+  f.puts "host #{git_host}"
+  f.puts "     user #{git_user}"
   f.puts "     IdentityFile #{ssh_dir}/id_rsa"
 end
 FileUtils.chmod 0600, "#{ssh_dir}/config"
