@@ -48,11 +48,11 @@ end
 
 ############# Get the known host from heroku's environment config ##############
 host_hash = read_env('GIT_HOST_HASH')
-host_hash = read_env('GITHUB_HOST_HASH')
+host_hash ||= read_env('GITHUB_HOST_HASH')
 
 if host_hash.nil?
   alert "GIT_HOST_HASH not set"
-  alert "  Try `heroku config:add GITHUB_HOST_HASH=<hash>`"
+  alert "  Try `heroku config:add GIT_HOST_HASH=<hash>`"
   exit 1
 end
 
