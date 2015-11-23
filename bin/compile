@@ -4,10 +4,10 @@ require 'fileutils'
 require 'pathname'
 require 'tmpdir'
 
-build_dir    = ARGV[0]
-cache_dir    = ARGV[1]
-env_dir      = ARGV[2]
-ssh_dir      = File.expand_path "#{ENV['HOME']}/.ssh"
+BUILD_DIR    = ARGV[0]
+CACHE_DIR    = ARGV[1]
+ENV_DIR      = ARGV[2]
+SSH_DIR      = File.expand_path "#{ENV['HOME']}/.ssh"
 
 def alert(str)
   str.split('\n').each do |line|
@@ -22,7 +22,7 @@ def arrow(str)
 end
 
 def read_env(env_file)
-  env_file_path = File.join(env_dir, env_file)
+  env_file_path = File.join(ENV_DIR, env_file)
   File.exist?(env_file_path) && File.read(env_file_path) || nil
 end
 
@@ -30,7 +30,7 @@ arrow "############################################"
 arrow "         GIT DEPLOY KEY BUILDPACK           "
 arrow "############################################"
 
-arrow "ssh dir is #{ssh_dir}"
+arrow "ssh dir is #{SSH_DIR}"
 ################# Get the key from heroku's environment config #################
 ssh_key = read_env('GIT_DEPLOY_KEY')
 ssh_key ||= read_env('GITHUB_DEPLOY_KEY')
@@ -103,28 +103,28 @@ Dir.mktmpdir 'ssh_buidpack' do |dir|
 end
 
 # Create the ssh directory on the server
-Dir.mkdir(ssh_dir, 0700) unless File.exists?(ssh_dir)
+Dir.mkdir(SSH_DIR, 0700) unless File.exists?(SSH_DIR)
 
 # Create id_rsa file and write contents
-File.open "#{ssh_dir}/id_rsa", 'w' do |f|
+File.open "#{SSH_DIR}/id_rsa", 'w' do |f|
   f.write ssh_key
 end
-FileUtils.chmod 0600, "#{ssh_dir}/id_rsa"
+FileUtils.chmod 0600, "#{SSH_DIR}/id_rsa"
 arrow "Wrote ssh key to user's ssh dir"
 
 #create known_hosts file and write contents
-File.open "#{ssh_dir}/known_hosts", 'w' do |f|
+File.open "#{SSH_DIR}/known_hosts", 'w' do |f|
   f.write host_hash
 end
-FileUtils.chmod 0600, "#{ssh_dir}/known_hosts"
+FileUtils.chmod 0600, "#{SSH_DIR}/known_hosts"
 arrow "Wrote host hash to user's known hosts"
 
-File.open "#{ssh_dir}/config", 'w' do |f|
-  f.puts "IdentityFile #{ssh_dir}/id_rsa"
+File.open "#{SSH_DIR}/config", 'w' do |f|
+  f.puts "IdentityFile #{SSH_DIR}/id_rsa"
   f.puts "host #{git_host}"
   f.puts "     user #{git_user}"
-  f.puts "     IdentityFile #{ssh_dir}/id_rsa"
+  f.puts "     IdentityFile #{SSH_DIR}/id_rsa"
 end
-FileUtils.chmod 0600, "#{ssh_dir}/config"
+FileUtils.chmod 0600, "#{SSH_DIR}/config"
 arrow "Wrote config to user's config"
 
