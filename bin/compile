@@ -23,6 +23,11 @@ end
 
 def read_env(env_file)
   env_file_path = File.join(ENV_DIR, env_file)
+
+  if env_file.include?('GITHUB') && File.exist?(env_file_path)
+    alert "#{env_file} is deprecated, please switch to #{env_file.sub('GITHUB','GIT')}"
+  end
+
   File.exist?(env_file_path) && File.read(env_file_path) || nil
 end
 
@@ -39,8 +44,6 @@ if ssh_key.nil?
   alert "GIT_DEPLOY_KEY not set"
   alert "  Try `heroku config:add GIT_DEPLOY_KEY=<your private token>`"
   exit 1
-elsif key_file_path.include?("GITHUB")
-  alert "GITHUB_DEPLOY_KEY will be deprecated; please switch to GIT_DEPLOY_KEY"
 end
 
 ############# Get the known host from heroku's environment config ##############
@@ -48,11 +51,9 @@ host_hash_path = read_env('GIT_HOST_HASH')
 host_hash_path = read_env('GITHUB_HOST_HASH')
 
 if host_hash.nil?
-  alert "GITHUB_HOST_HASH not set"
+  alert "GIT_HOST_HASH not set"
   alert "  Try `heroku config:add GITHUB_HOST_HASH=<hash>`"
   exit 1
-elsif key_file_path.include?("GITHUB")
-  alert "GITHUB_HOST_HASH will be deprecated; please switch to GIT_HOST_HASH"
 end
 
 
